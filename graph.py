@@ -39,8 +39,13 @@ def q1(client):
 # SQL query for Question 2. You must edit this funtion.
 # This function should return a list of days and their corresponding average likes.
 def q2(client):
-
-    return []
+    q = """select substr(create_time, 1, 3) as day, avg(like_num) as alike from `w4111-columbia.graph.tweets` group by day order by alike desc limit 7"""
+    #if no limit, may have none values
+    job = client.query(q)
+    results = job.result()
+    #print(results)
+    return list(results)
+    #return []
 
 # SQL query for Question 3. You must edit this funtion.
 # This function should return a list of source nodes and destination nodes in the graph.
@@ -170,9 +175,9 @@ def save_table():
 def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
-    #funcs_to_test = [q2]
+    funcs_to_test = [q2]
     #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-    funcs_to_test = [testquery]
+    #funcs_to_test = [testquery]
     for func in funcs_to_test:
         rows = func(client)
         print ("\n====%s====" % func.__name__)
