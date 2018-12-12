@@ -54,8 +54,8 @@ def q3(client):
             FROM 'w4111-columbia.graph.tweets'
             WHERE REGEXP_EXTRACT(text, "@\\K\\w+") is not NULL
         '''
-    save_table('GRAPH', q)
-    return list(results)
+    result = save_table('GRAPH', q)
+    return list(result) 
 
 # SQL query for Question 4. You must edit this funtion.
 # This function should return a list containing the twitter username of the users having the max indegree and max outdegree.
@@ -170,8 +170,8 @@ def save_table(name, sql):
         location='US',
         job_config=job_config)  # API request - starts the query
 
-    query_job.result()  # Waits for the query to finish
-    print('Query results loaded to table {}'.format(table_ref.path))
+    return query_job.result()  # Waits for the query to finish
+    
 
 @click.command()
 @click.argument("PATHTOCRED", type=click.Path(exists=True))
