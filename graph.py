@@ -50,8 +50,12 @@ def q2(client):
 # SQL query for Question 3. You must edit this funtion.
 # This function should return a list of source nodes and destination nodes in the graph.
 def q3(client):
-
-    return []
+    q = '''select twitter_username AS src, REGEXP_EXTRACT(text, "@\\K\\w+") AS dst
+            FROM 'w4111-columbia.graph.tweets'
+            WHERE REGEXP_EXTRACT(text, "@\\K\\w+") is not NULL
+        '''
+    save_table('GRAPH', q)
+    return list(results)
 
 # SQL query for Question 4. You must edit this funtion.
 # This function should return a list containing the twitter username of the users having the max indegree and max outdegree.
@@ -146,18 +150,17 @@ def bfs(client, start, n_iter):
 
 
 # Do not edit this function. You can use this function to see how to store tables using BigQuery.
-def save_table():
+def save_table(name, sql):
     client = bigquery.Client()
-    dataset_id = 'dataset'
+    dataset_id = 'graph'
 
     job_config = bigquery.QueryJobConfig()
     # Set use_legacy_sql to True to use legacy SQL syntax.
     job_config.use_legacy_sql = True
     # Set the destination table
-    table_ref = client.dataset(dataset_id).table('test')
+    table_ref = client.dataset(dataset_id).table(name)
     job_config.destination = table_ref
     job_config.allow_large_results = True
-    sql = """select * from [w4111-columbia.graph.tweets] limit 3"""
 
     # Start the query, passing in the extra configuration.
     query_job = client.query(
@@ -175,9 +178,8 @@ def save_table():
 def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
-    funcs_to_test = [q2]
-    #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-    #funcs_to_test = [testquery]
+    funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
+
     for func in funcs_to_test:
         rows = func(client)
         print ("\n====%s====" % func.__name__)
