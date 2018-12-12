@@ -11,6 +11,17 @@ def testquery(client):
 
     # waits for query to execute and return
     results = job.result()
+    # results = list(results)
+    # output = open('data3.xls', 'w')
+    # output.write('idx\create_time\id\in_reply\like_num\quoted_org_id\retweet_num\retweet_org_id\text\twitter_username\twitch_username\n')
+
+    # for i in range(3):
+    #     for j in results[i]:
+    #         output.write(str(j))
+    #         output.write('\t')
+    #     output.write('\n')
+    # output.close()
+    # return results
     return list(results)
 
 # SQL query for Question 1. You must edit this funtion.
@@ -159,9 +170,9 @@ def save_table():
 def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
-    funcs_to_test = [q2]
+    #funcs_to_test = [q2]
     #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-    #funcs_to_test = [testquery]
+    funcs_to_test = [testquery]
     for func in funcs_to_test:
         rows = func(client)
         print ("\n====%s====" % func.__name__)
