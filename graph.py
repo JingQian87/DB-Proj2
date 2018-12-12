@@ -16,8 +16,14 @@ def testquery(client):
 # SQL query for Question 1. You must edit this funtion.
 # This function should return a list of IDs and the corresponding text.
 def q1(client):
-
-    return []
+    var1 = 'going live'
+    var2 = 'https://www.twitch' #there is no twitch.com now, only twitch.tv
+    #var2 = 'https://t.co/'
+    q = """select id, text from `w4111-columbia.graph.tweets` where text like '%%%s%%' and text like '%%%s%%'""" %(var1, var2) 
+    job = client.query(q)
+    results = job.result()
+    #print(results)
+    return list(results)
 
 # SQL query for Question 2. You must edit this funtion.
 # This function should return a list of days and their corresponding average likes.
@@ -153,7 +159,8 @@ def save_table():
 def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
-    funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
+    funcs_to_test = [q2]
+    #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
     #funcs_to_test = [testquery]
     for func in funcs_to_test:
         rows = func(client)
