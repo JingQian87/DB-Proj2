@@ -50,7 +50,7 @@ def q2(client):
 # SQL query for Question 3. You must edit this funtion.
 # This function should return a list of source nodes and destination nodes in the graph.
 def q3(client):
-    q = '''create or replace table dataset.GRAPH as (select twitter_username AS src, REGEXP_EXTRACT(text, r"\s([@][\w_-]+)") AS dst
+    q = '''create or replace table dataset.GRAPH as (select twitter_username AS src, SUBSTR(REGEXP_EXTRACT(text, r"\s([@][\w_-]+)"),2) AS dst
             FROM `w4111-columbia.graph.tweets`
             WHERE REGEXP_EXTRACT(text, r"\s([@][\w_-]+)") is not NULL)
         '''
@@ -71,7 +71,6 @@ def q4(client):
     '''
     job = client.query(q)
     results = job.result()
-
     return list(results)
 
 # SQL query for Question 5. You must edit this funtion.
@@ -189,8 +188,8 @@ def save_table(name, sql):
 def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
-    funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-
+    #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
+    funcs_to_test = [q3, q4]
     for func in funcs_to_test:
         rows = func(client)
         print ("\n====%s====" % func.__name__)
