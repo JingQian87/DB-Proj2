@@ -64,9 +64,9 @@ def q4(client):
     q = '''
         select tmp1.src AS max_indegree, tmp2.dst AS max_outdegree
         from (
-            select src from dataset.GRAPH group by src order by count(*) desc limit 1) as tmp1,
+            select dst from dataset.GRAPH group by dst order by count(*) desc limit 1) as tmp1,
             (
-            select dst from dataset.GRAPH group by dst order by count(*) desc limit 1) as tmp2
+            select src from dataset.GRAPH group by src order by count(*) desc limit 1) as tmp2
 
     '''
     job = client.query(q)
@@ -76,8 +76,71 @@ def q4(client):
 # SQL query for Question 5. You must edit this funtion.
 # This function should return a list containing value of the conditional probability.
 def q5(client):
+    q = '''
+create or replace view dataset.unpop as (
+  select twitter_username from (
+    select avg(W.like_num) as usr_like, twitter_username from `w4111-columbia.graph.tweets` W
+    group by W.twitter_username
+  ) as temp
+  where temp.usr_like < (
+    select avg(usr_like) from (
+      select avg(W.like_num) as usr_like, twitter_username from `w4111-columbia.graph.tweets` W
+    group by W.twitter_username
+    ) as tmp
+  )
+  intersect distinct
+  select dst from (
+    select dst, count(*) as indegree from `proj2graph.dataset.GRAPH` group by dst
+  ) as tmp1
+  where tmp1.indegree < (
+    select avg(indegree) from (
+      select dst, count(*) as indegree from `proj2graph.dataset.GRAPH` group by dst
+    ) as tmp2
+  )
+)
+'''
+    job = client.query(q)
+    results = job.result()
+    q = '''
+create or replace view dataset.pop as (
+  select twitter_username from (
+    select avg(W.like_num) as usr_like, twitter_username from `w4111-columbia.graph.tweets` W
+    group by W.twitter_username
+  ) as temp
+  where temp.usr_like >= (
+    select avg(usr_like) from (
+      select avg(W.like_num) as usr_like, twitter_username from `w4111-columbia.graph.tweets` W
+    group by W.twitter_username
+    ) as tmp
+  )
+  intersect distinct
+  select dst from (
+    select dst, count(*) as indegree from `proj2graph.dataset.GRAPH` group by dst
+  ) as tmp1
+  where tmp1.indegree >= (
+    select avg(indegree) from (
+      select dst, count(*) as indegree from `proj2graph.dataset.GRAPH` group by dst
+    ) as tmp2
+  )
+)
 
-    return []
+'''
+    job = client.query(q)
+    results = job.result()
+    q = '''
+select tmp1.mention/tmp2.ppl
+from (
+select distinct count(*) as mention from dataset.pop P, dataset.unpop U, dataset.GRAPH G
+where U.twitter_username = G.src
+and P.twitter_username = G.dst
+) as tmp1,
+(
+select count(*) as ppl from dataset.unpop
+) as tmp2
+'''
+    job = client.query(q)
+    results = job.result()
+    return list(results)
 
 # SQL query for Question 6. You must edit this funtion.
 # This function should return a list containing the value for the number of triangles in the graph.
@@ -189,7 +252,7 @@ def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
     #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-    funcs_to_test = [q3, q4]
+    funcs_to_test = [q5]
     for func in funcs_to_test:
         rows = func(client)
         print ("\n====%s====" % func.__name__)
