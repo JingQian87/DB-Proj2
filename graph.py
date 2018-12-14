@@ -157,18 +157,15 @@ def q6(client):
 SELECT
   COUNT(*)
 FROM
-  dataset.GRAPH G1
-JOIN
-  dataset.GRAPH G2
-ON
-  G1.dst = G2.src
-  AND G1.src < G2.src
-JOIN
-  dataset.GRAPH G3
-ON
-  G2.dst = G3.src
-  AND G3.dst = G1.src
-  AND G2.src < G3.src
+  dataset.GRAPH g1,
+  dataset.GRAPH g2,
+  dataset.GRAPH g3
+WHERE
+  g1.dst = g2.src
+  AND g2.dst=g3.src
+  AND g3.dst=g1.src
+  AND g2.src<g3.src
+  AND g1.src>g2.src
 '''
     job = client.query(q)
     results = job.result()    
