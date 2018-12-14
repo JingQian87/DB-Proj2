@@ -50,9 +50,17 @@ def q2(client):
 # SQL query for Question 3. You must edit this funtion.
 # This function should return a list of source nodes and destination nodes in the graph.
 def q3(client):
-    q = '''create or replace table dataset.GRAPH as (select twitter_username AS src, SUBSTR(REGEXP_EXTRACT(text, r"\s([@][\w_-]+)"),2) AS dst
-            FROM `w4111-columbia.graph.tweets`
-            WHERE REGEXP_EXTRACT(text, r"\s([@][\w_-]+)") is not NULL)
+    q = '''
+CREATE OR REPLACE TABLE
+  dataset.GRAPH AS (
+  SELECT
+    DISTINCT twitter_username AS src,
+    SUBSTR(REGEXP_EXTRACT(text, r"\s([@][\w_-]+)"),2) AS dst
+  FROM
+    `w4111-columbia.graph.tweets`
+  WHERE
+    REGEXP_EXTRACT(text, r"\s([@][\w_-]+)") IS NOT NULL
+    AND twitter_username != SUBSTR(REGEXP_EXTRACT(text, r"\s([@][\w_-]+)"),2))
         '''
     job = client.query(q)
     results = job.result()
@@ -128,7 +136,7 @@ create or replace view dataset.pop as (
     job = client.query(q)
     results = job.result()
     q = '''
-select tmp1.mention/tmp2.ppl
+select tmp1.mention/tmp2.ppl as popular_unpopular
 from (
 select distinct count(*) as mention from dataset.pop P, dataset.unpop U, dataset.GRAPH G
 where U.twitter_username = G.src
@@ -145,8 +153,26 @@ select count(*) as ppl from dataset.unpop
 # SQL query for Question 6. You must edit this funtion.
 # This function should return a list containing the value for the number of triangles in the graph.
 def q6(client):
-
-    return []
+    q = '''
+SELECT
+  COUNT(*)
+FROM
+  dataset.GRAPH G1
+JOIN
+  dataset.GRAPH G2
+ON
+  G1.dst = G2.src
+  AND G1.src < G2.src
+JOIN
+  dataset.GRAPH G3
+ON
+  G2.dst = G3.src
+  AND G3.dst = G1.src
+  AND G2.src < G3.src
+'''
+    job = client.query(q)
+    results = job.result()    
+    return list(results)
 
 # SQL query for Question 7. You must edit this funtion.
 # This function should return a list containing the twitter username and their corresponding PageRank.
