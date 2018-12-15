@@ -70,7 +70,7 @@ CREATE OR REPLACE TABLE
 # This function should return a list containing the twitter username of the users having the max indegree and max outdegree.
 def q4(client):
     q = '''
-        select tmp1.src AS max_indegree, tmp2.dst AS max_outdegree
+        select tmp1.dst AS max_indegree, tmp2.src AS max_outdegree
         from (
             select dst from dataset.GRAPH group by dst order by count(*) desc limit 1) as tmp1,
             (
