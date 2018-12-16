@@ -60,8 +60,7 @@ CREATE OR REPLACE TABLE
   FROM
     `w4111-columbia.graph.tweets`
   WHERE
-    REGEXP_EXTRACT(text, r"\s([@][\w_-]+)") IS NOT NULL
-    AND twitter_username != SUBSTR(REGEXP_EXTRACT(text, r"\s([@][\w_-]+)"),2))
+    REGEXP_EXTRACT(text, r"\s([@][\w_-]+)") IS NOT NULL)
         '''
     job = client.query(q)
     results = job.result()
@@ -172,6 +171,7 @@ WHERE
   AND g3.dst=g1.src
   AND g2.src<g3.src
   AND g1.src>g2.src
+  AND g1.src!=g3.src
 '''
     job = client.query(q)
     results = job.result()    
