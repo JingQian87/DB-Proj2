@@ -1,5 +1,6 @@
 import click
 from google.cloud import bigquery
+import pandas
 
 uni1 = 'jq2282' # Your uni
 uni2 = 'zw2498' # Partner's uni. If you don't have a partner, put None
@@ -28,12 +29,12 @@ def testquery(client):
 # This function should return a list of IDs and the corresponding text.
 def q1(client):
     var1 = 'going live'
-    var2 = 'https://www.twitch' #there is no twitch.com now, only twitch.tv
-    #var2 = 'https://t.co/'
+    var2 = 'www.twitch' #there is no twitch.com now, only twitch.tv
     q = """select id, text from `w4111-columbia.graph.tweets` where text like '%%%s%%' and text like '%%%s%%'""" %(var1, var2) 
     job = client.query(q)
     results = job.result()
-    #print(results)
+    df = job.to_dataframe()
+    #print(df)
     return list(results)
 
 # SQL query for Question 2. You must edit this funtion.
@@ -64,7 +65,12 @@ CREATE OR REPLACE TABLE
         '''
     job = client.query(q)
     results = job.result()
-    return [] 
+
+    q = """select count(*) from dataset.GRAPH"""
+    job = client.query(q)
+    results = job.result()
+    return list(results)
+    #return [] 
 
 # SQL query for Question 4. You must edit this funtion.
 # This function should return a list containing the twitter username of the users having the max indegree and max outdegree.
@@ -177,8 +183,14 @@ def q7(client):
     #Create table and initialize the pagerank = 1/count(src)
     q1 = """
         create or replace table dataset.pagerank as
-        select distinct src as twitter_username, 1.0/(select count(distinct src) from dataset.GRAPH) as page_rank_score
-        from dataset.GRAPH
+        select tmp.dst as twitter_username, 1.0/(
+            select count(*)
+            from (select dst from dataset.GRAPH
+                union distinct
+                select distinct src from dataset.GRAPH) as tmp2) as page_rank_score
+        from (select distinct g1.dst from dataset.GRAPH as g1
+                union distinct
+                select distinct g2.src from dataset.GRAPH as g2) as tmp
          """
     job = client.query(q1)
     results = job.result()
@@ -206,28 +218,7 @@ def q7(client):
                    group by t1.twitter_username, t1.page_rank_score) as tmp1
             on tmp1.id = g.src
             group by tr.twitter_username
-        """
-
-        # q3 = """
-        #     insert into dataset.pagerank(twitter_username, page_rank_score)
-        #     select tr.twitter_username, sum(tmp1.split)
-        #     from dataset.tmprank as tr
-        #     inner join dataset.GRAPH as g on tr.twitter_username = g.dst
-        #     inner join
-        #          (
-        #            select t1.page_rank_score/tmp2.c as split, t1.twitter_username as id
-        #             from dataset.tmprank as t1, dataset.GRAPH as g1, 
-        #             (
-        #             select g2.src, count(*) as c
-        #             from dataset.GRAPH as g2
-        #             group by g2.src
-        #             ) as tmp2
-        #             where g1.src = t1.twitter_username
-        #             and tmp2.src = g1.src
-        #            group by t1.twitter_username, t1.page_rank_score) as tmp1
-        #     on tmp1.id = g.src
-        #     group by tr.twitter_username
-        # """
+         """
 
         job = client.query(q3)
         results = job.result() 
@@ -243,6 +234,20 @@ def q7(client):
     results = job.result()
 
     return list(results)
+
+def test_graph(client):
+    q1 = """
+        select distinct src from dataset.GRAPH
+        """
+    job = client.query(q1)
+    results = job.result()
+    print(len(list(results)))
+    q2 = """
+        select distinct dst from dataset.GRAPH
+        """
+    job = client.query(q2)
+    results = job.result()
+    print(len(list(results)))
 
 
 # Do not edit this function. This is for helping you develop your own iterative PageRank algorithm.
@@ -348,6 +353,7 @@ def main(pathtocred):
         print ("\n====%s====" % func.__name__)
         print(rows)
 
+    #test_graph(client)
     #bfs(client, 'A', 5)
 
 if __name__ == "__main__":
