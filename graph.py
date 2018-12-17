@@ -40,7 +40,7 @@ def q1(client):
 # SQL query for Question 2. You must edit this funtion.
 # This function should return a list of days and their corresponding average likes.
 def q2(client):
-    q = """select substr(create_time, 1, 3) as day, avg(like_num) as alike from `w4111-columbia.graph.tweets` group by day order by alike desc limit 7"""
+    q = """select substr(create_time, 1, 3) as day, avg(like_num) as avg_likes from `w4111-columbia.graph.tweets` group by day order by avg_likes desc limit 7"""
     #if no limit, may have none values
     job = client.query(q)
     results = job.result()
@@ -68,7 +68,7 @@ CREATE OR REPLACE TABLE
     q = """select count(*) from dataset.GRAPH"""
     job = client.query(q)
     results = job.result()
-    return list(results)
+    #return list(results)
     #return [] 
 
 # SQL query for Question 4. You must edit this funtion.
@@ -160,7 +160,7 @@ select count(*) as ppl from dataset.unpop
 def q6(client):
     q = '''
 SELECT
-  COUNT(*)
+  COUNT(*) as no_of_triangles
 FROM
   dataset.GRAPH g1,
   dataset.GRAPH g2,
@@ -187,10 +187,10 @@ def q7(client):
             select count(*)
             from (select dst from dataset.GRAPH
                 union distinct
-                select distinct src from dataset.GRAPH) as tmp2) as page_rank_score
-        from (select distinct g1.dst from dataset.GRAPH as g1
+                select src from dataset.GRAPH)) as page_rank_score
+        from (select dst from dataset.GRAPH
                 union distinct
-                select distinct g2.src from dataset.GRAPH as g2) as tmp
+                select src from dataset.GRAPH) as tmp
          """
     job = client.query(q1)
     results = job.result()
@@ -205,19 +205,21 @@ def q7(client):
         job = client.query(q2)
         results = job.result() 
         q3 = """
-            insert into dataset.pagerank(twitter_username, page_rank_score)
-            select tr.twitter_username, sum(tmp1.split)
-            from dataset.tmprank as tr
-            inner join dataset.GRAPH as g on tr.twitter_username = g.dst
-            inner join
+            update dataset.pagerank as T
+            set T.page_rank_score = temp.rank
+            from (select tr.twitter_username as name, sum(tmp1.split) as rank
+                from dataset.tmprank as tr
+                inner join dataset.GRAPH as g on tr.twitter_username = g.dst
+                inner join
                  (
                    select t1.page_rank_score/count(*) as split, t1.twitter_username as id
                    from dataset.tmprank as t1 
                    inner join dataset.GRAPH as g1
                    on g1.src = t1.twitter_username
                    group by t1.twitter_username, t1.page_rank_score) as tmp1
-            on tmp1.id = g.src
-            group by tr.twitter_username
+                on tmp1.id = g.src
+                group by tr.twitter_username) as temp
+            where T.twitter_username = temp.name
          """
 
         job = client.query(q3)
@@ -420,14 +422,14 @@ def save_table(name, sql):
 def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
-    #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-    # funcs_to_test = [q3, q4, q5, q6]
-    # for func in funcs_to_test:
-    #     rows = func(client)
-    #     print ("\n====%s====" % func.__name__)
-    #     print(rows)
+    funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
+    #funcs_to_test = [q7]
+    for func in funcs_to_test:
+        rows = func(client)
+        print ("\n====%s====" % func.__name__)
+        print(rows)
 
-    test_pagedown(client)
+    #test_pagedown(client)
     #test_graph(client)
     #bfs(client, 'A', 5)
 
