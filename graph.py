@@ -249,6 +249,80 @@ def test_graph(client):
     results = job.result()
     print(len(list(results)))
 
+def test_pagedown(client):
+    q3 = """
+        create or replace table dataset.testG (src string, dst string)
+        """
+    q4 = """
+        insert into dataset.testG(src, dst) values
+        ('B', 'A'),
+        ('C', 'A'),
+        ('D', 'A');
+    """   
+    # q4 = """
+    #     insert into dataset.testG(src, dst) values
+    #     ('B', 'C'),
+    #     ('B', 'A'),
+    #     ('C', 'A'),
+    #     ('D', 'A'),
+    #     ('D', 'B'),
+    #     ('D', 'C');
+    # """
+    job = client.query(q3)
+    results = job.result()
+    job = client.query(q4)
+    results = job.result()
+
+
+    q1 = """
+        create or replace table dataset.test as
+        select tmp.dst as twitter_username, 1.0/(select count(*) from (select dst from dataset.testG 
+                    union distinct 
+                    select src from dataset.testG) as tmp2) as page_rank_score
+        from (select dst from dataset.testG
+             union distinct 
+             select src from dataset.testG) as tmp
+    """
+
+    job = client.query(q1)
+    results = job.result()
+
+
+
+    n_iter = 3
+    for i in range(n_iter):
+        print("Step %d..." % (i+1))
+        q5 = """
+            create or replace table dataset.tmptest as
+            select * from dataset.test
+             """
+        job = client.query(q5)
+        results = job.result() 
+        q6 = """
+            update dataset.test as T
+            set T.page_rank_score = temp.rank
+            from (select tr.twitter_username as name, sum(tmp1.split) as rank
+            from dataset.tmptest as tr
+            inner join dataset.testG as g on tr.twitter_username = g.dst
+            inner join
+                 (
+                   select t1.page_rank_score/count(*) as split, t1.twitter_username as id
+                   from dataset.tmptest as t1 
+                   inner join dataset.testG as g1
+                   on g1.src = t1.twitter_username
+                   group by t1.twitter_username, t1.page_rank_score) as tmp1
+            on tmp1.id = g.src
+            group by tr.twitter_username) as temp
+            where T.twitter_username = temp.name
+         """
+        q7 = """
+            select * from dataset.test"""
+        job = client.query(q6)
+        results = job.result() 
+        job = client.query(q7)
+        results = job.result() 
+        df = job.to_dataframe()
+        print(df)
 
 # Do not edit this function. This is for helping you develop your own iterative PageRank algorithm.
 def bfs(client, start, n_iter):
@@ -347,12 +421,13 @@ def main(pathtocred):
     client = bigquery.Client.from_service_account_json(pathtocred)
 
     #funcs_to_test = [q1, q2, q3, q4, q5, q6, q7]
-    funcs_to_test = [q7]
-    for func in funcs_to_test:
-        rows = func(client)
-        print ("\n====%s====" % func.__name__)
-        print(rows)
+    # funcs_to_test = [q3, q4, q5, q6]
+    # for func in funcs_to_test:
+    #     rows = func(client)
+    #     print ("\n====%s====" % func.__name__)
+    #     print(rows)
 
+    test_pagedown(client)
     #test_graph(client)
     #bfs(client, 'A', 5)
 
